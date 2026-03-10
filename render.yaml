@@ -9,7 +9,7 @@ services:
         generateValue: true
       - key: ASOBIBA_DB_PATH
         value: /var/data/asobiba.sqlite3
-    disks:
-      - name: asobiba-data
-        mountPath: /var/data
-        sizeGB: 1
+    disk:
+      name: asobiba-data
+      mountPath: /var/data
+      sizeGB: 1
