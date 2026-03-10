@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}ホーム | Asobiba Game Cafe{% endblock %}
+{% block content %}
+<section class="hero-card">
+  <div>
+    <p class="eyebrow">ONLINE GAME LOUNGE</p>
+    <h1>オセロ、将棋、UNO まで。<br>木の香りがするゲームカフェ。</h1>
+    <p class="hero-copy">
+      6つのゲーム、気軽な募集掲示板、対戦中チャットをひとつにまとめたラウンジです。
+      アカウントはユーザー名と 4 桁 PIN だけで作れます。
+    </p>
+  </div>
+  <div class="hero-note">
+    <div class="note-title">遊べるゲーム</div>
+    <ul>
+      {% for game in games %}
+      <li>{{ game.name }} <span>{{ game.players }}</span></li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+<section class="grid-two">
+  <article class="panel">
+    <h2>ゲーム一覧</h2>
+    <div class="game-grid">
+      {% for game in games %}
+      <div class="game-card">
+        <div class="game-top">
+          <h3>{{ game.name }}</h3>
+          <span>{{ game.players }}</span>
+        </div>
+        <p>{{ game.description }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <article class="panel">
+    <h2>部屋をつくる</h2>
+    {% if user %}
+    <form method="post" action="/rooms/create" class="stack-form">
+      <label>
+        <span>ゲーム</span>
+        <select name="game_id">
+          {% for game in games %}
+          <option value="{{ game.id }}">{{ game.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        <span>募集タイトル</span>
+        <input type="text" name="title" placeholder="夜カフェで UNO 募集" maxlength="60">
+      </label>
+      <label>
+        <span>ひとこと</span>
+        <textarea name="note" rows="4" maxlength="200" placeholder="ゆるく遊べる人、歓迎です。"></textarea>
+      </label>
+      <button class="wood-button" type="submit">募集付きで部屋を作る</button>
+    </form>
+    {% else %}
+    <p class="muted">部屋作成と対戦にはログインが必要です。</p>
+    <div class="cta-row">
+      <a class="wood-button link-button" href="/register">新規登録</a>
+      <a class="secondary-button link-button" href="/login">ログイン</a>
+    </div>
+    {% endif %}
+  </article>
+</section>
+
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <h2>募集掲示板</h2>
+      <p class="muted">フル掲示板ではなく、相手募集に絞った軽量版です。</p>
+    </div>
+  </div>
+  <div class="post-list">
+    {% if posts %}
+      {% for post in posts %}
+      <article class="post-card">
+        <div class="post-meta">
+          <span class="chip">{{ game_map[post.game_id].name }}</span>
+          <span>{{ post.author_name }}</span>
+          <span>{{ post.created_at.replace('T', ' ') }}</span>
+        </div>
+        <h3>{{ post.title }}</h3>
+        <p>{{ post.note or 'ひとことなし' }}</p>
+        <div class="post-actions">
+          <a class="secondary-button link-button" href="/rooms/{{ post.room_code }}">部屋へ行く</a>
+          {% if user and user.id == post.author_id %}
+          <form method="post" action="/posts/{{ post.id }}/close">
+            <button class="ghost-button" type="submit">募集を閉じる</button>
+          </form>
+          {% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    {% else %}
+      <p class="muted">まだ募集はありません。最初の部屋を作ってみましょう。</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

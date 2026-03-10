@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ room.title }} | Asobiba Game Cafe{% endblock %}
+{% block content %}
+<section class="room-layout">
+  <article class="panel room-panel">
+    <div class="room-head">
+      <div>
+        <div class="eyebrow">{{ game_map[room.game_id].name }} / Room {{ room.code }}</div>
+        <h1>{{ room.title }}</h1>
+        <p class="muted">{{ room.note or "ひとことなし" }}</p>
+      </div>
+      <a class="secondary-button link-button" href="/">ラウンジに戻る</a>
+    </div>
+
+    <div class="room-meta">
+      <div>
+        <h3>プレイヤー</h3>
+        <ul id="playersList" class="simple-list"></ul>
+      </div>
+      <div>
+        <h3>観戦中</h3>
+        <ul id="spectatorList" class="simple-list"></ul>
+      </div>
+      <div>
+        <h3>状態</h3>
+        <p id="statusMessage" class="status-line">接続中...</p>
+      </div>
+    </div>
+
+    <div id="gameRoot" class="game-root"></div>
+  </article>
+
+  <aside class="panel chat-panel">
+    <h2>ゲーム中チャット</h2>
+    <div id="chatLog" class="chat-log"></div>
+    <form id="chatForm" class="chat-form">
+      <input id="chatInput" type="text" maxlength="160" placeholder="いまの一手、良かったです。">
+      <button class="wood-button" type="submit">送信</button>
+    </form>
+  </aside>
+</section>
+
+<script>
+  window.roomConfig = {{ {
+    "roomCode": room.code,
+    "wsToken": ws_token,
+    "currentUser": user.username,
+    "currentUserId": user.id
+  }|tojson }};
+</script>
+<script src="{{ url_for('static', path='room.js') }}"></script>
+{% endblock %}

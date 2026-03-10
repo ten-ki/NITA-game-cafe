@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}新規登録 | Asobiba Game Cafe{% endblock %}
+{% block content %}
+<section class="auth-card">
+  <h1>新規登録</h1>
+  <p class="muted">メールアドレスなし。ユーザー名と数字 4 桁 PIN だけで始められます。</p>
+  {% if error %}<div class="error-box">{{ error }}</div>{% endif %}
+  <form method="post" class="stack-form">
+    <label>
+      <span>ユーザー名</span>
+      <input type="text" name="username" value="{{ username or '' }}" maxlength="20" required>
+    </label>
+    <label>
+      <span>PIN</span>
+      <input type="password" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required>
+    </label>
+    <button class="wood-button" type="submit">アカウントを作る</button>
+  </form>
+  <p class="muted small">PIN を忘れた場合は回復せず、新しいアカウントを作り直す前提です。</p>
+</section>
+{% endblock %}

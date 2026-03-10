@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}プロフィール | Asobiba Game Cafe{% endblock %}
+{% block content %}
+<section class="panel profile-card">
+  <h1>{{ summary.user.username }}</h1>
+  <dl class="profile-grid">
+    <div><dt>登録日</dt><dd>{{ summary.user.created_at.replace('T', ' ') }}</dd></div>
+    <div><dt>募集投稿数</dt><dd>{{ summary.post_count }}</dd></div>
+    <div><dt>認証方式</dt><dd>ユーザー名 + 4 桁 PIN</dd></div>
+    <div><dt>アカウント回復</dt><dd>なし</dd></div>
+  </dl>
+</section>
+{% endblock %}

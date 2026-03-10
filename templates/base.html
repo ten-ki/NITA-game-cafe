@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Asobiba Game Cafe{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-brand">
+      <div class="brand-mark">☕</div>
+      <div>
+        <div class="brand-title">Asobiba Game Cafe</div>
+        <div class="brand-sub">木のぬくもりのある対戦ラウンジ</div>
+      </div>
+    </div>
+    <nav class="site-nav">
+      <a href="/">ホーム</a>
+      {% if user %}
+      <a href="/profile">{{ user.username }}</a>
+      <form method="post" action="/logout">
+        <button class="ghost-button" type="submit">ログアウト</button>
+      </form>
+      {% else %}
+      <a href="/login">ログイン</a>
+      <a href="/register" class="primary-link">新規登録</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <main class="page-shell">
+    {% if flash %}
+    <div class="flash">{{ flash }}</div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
