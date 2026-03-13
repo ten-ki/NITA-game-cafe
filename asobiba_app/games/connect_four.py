@@ -43,6 +43,9 @@ class ConnectFourEngine(BaseGame):
 
     def snapshot_for(self, user_id: str) -> dict[str, Any]:
         piece = self._piece_for(user_id) if self.is_player(user_id) else None
+        turn_user_id = None
+        if self.started and len(self.players) >= 2:
+            turn_user_id = self.players[0]["user_id"] if self.turn_piece == "R" else self.players[1]["user_id"]
         valid = [
             {"col": col}
             for col in range(7)
@@ -57,6 +60,7 @@ class ConnectFourEngine(BaseGame):
                 "cols": 7,
                 "piece": piece,
                 "turn_piece": self.turn_piece,
+                "turn_user_id": turn_user_id,
                 "valid_columns": valid,
             }
         )

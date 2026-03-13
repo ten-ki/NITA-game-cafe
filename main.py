@@ -1,13 +1,20 @@
 from __future__ import annotations
 
 from pathlib import Path
+import secrets
 
 from fastapi import FastAPI, Form, Request, WebSocket
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from asobiba_app.auth import current_user, login_cookie_value, room_token, validate_room_token
+from asobiba_app.auth import (
+    current_user,
+    guest_cookie_value,
+    login_cookie_value,
+    room_token_for_user,
+    validate_room_token,
+)
 from asobiba_app.catalog import GAME_MAP, GAMES
 from asobiba_app.db import (
     authenticate_user,
@@ -15,7 +22,6 @@ from asobiba_app.db import (
     close_post,
     create_post,
     create_user,
-    get_user_by_id,
     get_user_summary,
     init_db,
     list_open_posts,
@@ -97,6 +103,25 @@ def register(
     return response
 
 
+@app.post("/guest/login")
+def guest_login(request: Request, guest_name: str = Form(...)):
+    guest_name = guest_name.strip()
+    if not guest_name:
+        return render(request, "index.html", posts=list_open_posts(), error="表示名を入力してください。")
+    try:
+        cookie_value = guest_cookie_value(secrets.token_hex(4), guest_name)
+    except AuthError as exc:
+        return render(request, "index.html", posts=list_open_posts(), error=str(exc))
+    response = redirect("/", f"{guest_name} で参加しました。")
+    response.set_cookie(
+        "asobiba_session",
+        cookie_value,
+        httponly=True,
+        samesite="lax",
+    )
+    return response
+
+
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
     return render(request, "login.html")
@@ -129,6 +154,8 @@ def profile(request: Request):
     user = current_user(request)
     if not user:
         return redirect("/login", "先にログインしてください。")
+    if user.get("is_guest"):
+        return redirect("/", "ゲストにはプロフィール機能はありません。")
     return render(request, "profile.html", summary=get_user_summary(user["id"]))
 
 
@@ -141,7 +168,7 @@ def create_room_route(
 ):
     user = current_user(request)
     if not user:
-        return redirect("/login", "部屋を作るにはログインが必要です。")
+        return redirect("/", "表示名を入力してから部屋を作ってください。")
     if game_id not in GAME_MAP:
         return redirect("/", "ゲームを選び直してください。")
     title = title.strip()[:60]
@@ -149,7 +176,8 @@ def create_room_route(
     if not title:
         title = f"{GAME_MAP[game_id]['name']} 募集"
     room = ROOM_MANAGER.create_room(game_id, str(user["id"]), user["username"], title, note)
-    create_post(user["id"], user["username"], game_id, title, note, room.code)
+    if not user.get("is_guest"):
+        create_post(user["id"], user["username"], game_id, title, note, room.code)
     return redirect(f"/rooms/{room.code}", "部屋を作りました。")
 
 
@@ -166,7 +194,7 @@ def close_post_route(post_id: int, request: Request):
 def room_page(code: str, request: Request):
     user = current_user(request)
     if not user:
-        return redirect("/login", "対戦するにはログインしてください。")
+        return redirect("/", "表示名を入力して参加してください。")
     sync_posts_with_rooms()
     room = ROOM_MANAGER.get_room(code)
     if not room:
@@ -175,16 +203,15 @@ def room_page(code: str, request: Request):
         request,
         "room.html",
         room=room,
-        ws_token=room_token(str(user["id"]), code),
+        ws_token=room_token_for_user(user, code),
     )
 
 
 @app.websocket("/ws/rooms/{code}")
 async def room_socket(websocket: WebSocket, code: str, token: str):
-    user_id = validate_room_token(token, code)
-    user = get_user_by_id(user_id)
+    identity = validate_room_token(token, code)
     room = ROOM_MANAGER.get_room(code)
-    if not user or not room:
+    if not identity or not room:
         await websocket.close(code=4404)
         return
-    await room.connect(websocket, str(user["id"]), user["username"])
+    await room.connect(websocket, str(identity["id"]), identity["username"])

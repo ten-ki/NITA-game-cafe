@@ -2,6 +2,7 @@ const config = window.roomConfig;
 const socket = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/rooms/${config.roomCode}?token=${encodeURIComponent(config.wsToken)}`);
 
 const gameRoot = document.getElementById("gameRoot");
+const roomControls = document.getElementById("roomControls");
 const playersList = document.getElementById("playersList");
 const spectatorList = document.getElementById("spectatorList");
 const statusMessage = document.getElementById("statusMessage");
@@ -49,8 +50,17 @@ function sendAction(payload) {
 }
 
 function renderState(state) {
+  const controls = state.room_controls || {};
+  const readySet = new Set(controls.ready_player_ids || []);
   playersList.innerHTML = state.players
-    .map((player) => `<li>${escapeHtml(player.username)} ${player.online ? "●" : "○"}${player.id === config.currentUserId ? " (あなた)" : ""}</li>`)
+    .map((player) => {
+      const flags = [];
+      if (player.user_id === config.currentUserId) flags.push("あなた");
+      if (player.is_cpu) flags.push("CPU");
+      if (readySet.has(player.user_id)) flags.push("準備OK");
+      const suffix = flags.length ? ` (${flags.join(" / ")})` : "";
+      return `<li>${escapeHtml(player.username)} ${player.online ? "●" : "○"}${suffix}</li>`;
+    })
     .join("");
   spectatorList.innerHTML = state.spectators.length
     ? state.spectators.map((player) => `<li>${escapeHtml(player.username)}</li>`).join("")
@@ -66,11 +76,50 @@ function renderState(state) {
     : "<div class='muted'>まだチャットはありません。</div>";
   if (keepPinned) chatLog.scrollTop = chatLog.scrollHeight;
 
+  renderRoomControls(state);
+
   if (state.kind === "board-grid") renderBoardGrid(state);
   if (state.kind === "connect-four") renderConnectFour(state);
   if (state.kind === "shogi") renderShogi(state);
   if (state.kind === "uno") renderUno(state);
   if (state.kind === "daifugo") renderDaifugo(state);
+}
+
+function renderRoomControls(state) {
+  const controls = state.room_controls || {};
+  if (!roomControls) return;
+  const isPlayer = state.players.some((player) => player.user_id === config.currentUserId);
+  const readySet = new Set(controls.ready_player_ids || []);
+  const youReady = readySet.has(config.currentUserId);
+  const votes = controls.fill_votes || {};
+
+  roomControls.innerHTML = `
+    <div class="section-head">
+      <div>
+        <strong>マッチ設定</strong>
+        <p class="helper-text">プレイヤー ${controls.current_player_count || 0}/${controls.max_players || 0}・CPU ${controls.cpu_count || 0}</p>
+      </div>
+    </div>
+    <div class="shogi-controls">
+      ${controls.uses_ready_flow && isPlayer && !state.started ? `<button class="secondary-button" id="readyToggleBtn">${youReady ? "準備を解除" : "準備OK"}</button>` : ""}
+      ${controls.can_add_cpu && isPlayer && !state.started ? `<button class="ghost-button" id="addCpuBtn">CPUを1人追加</button>` : ""}
+      ${controls.fill_decision_open && isPlayer ? `<button class="action-button" id="fillCpuBtn">不足分をCPUで補充</button><button class="secondary-button" id="startNowBtn">この人数で開始</button>` : ""}
+    </div>
+    ${controls.fill_decision_open ? `<p class="helper-text">全員の選択が揃うと開始します。現在の投票: ${Object.keys(votes).length}件</p>` : ""}
+  `;
+
+  document.getElementById("readyToggleBtn")?.addEventListener("click", () => {
+    sendAction({ type: "ready_toggle", ready: !youReady });
+  });
+  document.getElementById("addCpuBtn")?.addEventListener("click", () => {
+    sendAction({ type: "add_cpu" });
+  });
+  document.getElementById("fillCpuBtn")?.addEventListener("click", () => {
+    sendAction({ type: "fill_decision", choice: "fill" });
+  });
+  document.getElementById("startNowBtn")?.addEventListener("click", () => {
+    sendAction({ type: "fill_decision", choice: "start" });
+  });
 }
 
 function renderBoardGrid(state) {

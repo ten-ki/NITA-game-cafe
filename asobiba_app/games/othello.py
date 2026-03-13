@@ -75,6 +75,9 @@ class OthelloEngine(BaseGame):
     def snapshot_for(self, user_id: str) -> dict[str, Any]:
         piece = self._piece_for(user_id) if self.is_player(user_id) else None
         valid = self._valid_moves(piece) if self.started and piece == self.turn_piece and not self.winner else []
+        turn_user_id = None
+        if self.started and len(self.players) >= 2:
+            turn_user_id = self.players[0]["user_id"] if self.turn_piece == "B" else self.players[1]["user_id"]
         data = self.snapshot_base(user_id)
         data.update(
             {
@@ -84,6 +87,7 @@ class OthelloEngine(BaseGame):
                 "cols": 8,
                 "piece": piece,
                 "turn_piece": self.turn_piece,
+                "turn_user_id": turn_user_id,
                 "valid_moves": [{"row": r, "col": c} for r, c in valid],
                 "scores": {
                     "B": sum(cell == "B" for row in self.board for cell in row),

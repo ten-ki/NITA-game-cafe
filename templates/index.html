@@ -3,11 +3,11 @@
 {% block content %}
 <section class="hero-card">
   <div>
-    <p class="eyebrow">ONLINE GAME LOUNGE</p>
-    <h1>オセロ、将棋、UNO まで。<br>木の香りがするゲームカフェ。</h1>
+    <p class="eyebrow">GAME LOUNGE</p>
+    <h1>今すぐ遊べる。<br>すぐ対戦できる。</h1>
     <p class="hero-copy">
-      6つのゲーム、気軽な募集掲示板、対戦中チャットをひとつにまとめたラウンジです。
-      アカウントはユーザー名と 4 桁 PIN だけで作れます。
+      6つのゲームと、軽い募集掲示板、対戦チャットをひとつに。
+      表示名だけのゲスト参加にも対応しました。
     </p>
   </div>
   <div class="hero-note">
@@ -39,6 +39,9 @@
   <article class="panel">
     <h2>部屋をつくる</h2>
     {% if user %}
+    {% if user.is_guest %}
+    <p class="muted">ゲスト参加中: {{ user.username }}（募集掲示板には投稿されません）</p>
+    {% endif %}
     <form method="post" action="/rooms/create" class="stack-form">
       <label>
         <span>ゲーム</span>
@@ -59,11 +62,19 @@
       <button class="wood-button" type="submit">募集付きで部屋を作る</button>
     </form>
     {% else %}
-    <p class="muted">部屋作成と対戦にはログインが必要です。</p>
-    <div class="cta-row">
-      <a class="wood-button link-button" href="/register">新規登録</a>
-      <a class="secondary-button link-button" href="/login">ログイン</a>
-    </div>
+    {% if error %}<div class="error-box">{{ error }}</div>{% endif %}
+    <form method="post" action="/guest/login" class="stack-form">
+      <label>
+        <span>表示名</span>
+        <input type="text" name="guest_name" maxlength="20" placeholder="例: NitaPlayer" required>
+      </label>
+      <button class="wood-button" type="submit">ゲストで参加する</button>
+      <p class="muted small">アカウントを作る場合はログイン/登録へ。</p>
+      <div class="cta-row">
+        <a class="secondary-button link-button" href="/login">ログイン</a>
+        <a class="ghost-button link-button" href="/register">新規登録</a>
+      </div>
+    </form>
     {% endif %}
   </article>
 </section>

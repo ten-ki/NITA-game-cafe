@@ -72,6 +72,9 @@ class ShogiEngine(BaseGame):
 
     def snapshot_for(self, user_id: str) -> dict[str, Any]:
         your_color = self._color_for(user_id) if self.is_player(user_id) else None
+        turn_user_id = None
+        if self.started and len(self.players) >= 2:
+            turn_user_id = self.players[0]["user_id"] if self.board.turn == shogi.BLACK else self.players[1]["user_id"]
         legal_moves = []
         if self.started and self.is_player(user_id) and your_color == self.board.turn and not self.winner:
             for move in self.board.legal_moves:
@@ -90,6 +93,7 @@ class ShogiEngine(BaseGame):
                 "kind": "shogi",
                 "board": self._board_grid(),
                 "turn_color": "black" if self.board.turn == shogi.BLACK else "white",
+                "turn_user_id": turn_user_id,
                 "your_color": "black" if your_color == shogi.BLACK else "white" if your_color == shogi.WHITE else None,
                 "hands": self._hands(),
                 "legal_moves": legal_moves,

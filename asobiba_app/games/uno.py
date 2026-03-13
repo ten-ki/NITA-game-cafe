@@ -42,6 +42,7 @@ class UnoEngine(BaseGame):
 
     def __init__(self) -> None:
         super().__init__()
+        self.auto_start = False
         self.turn_index = 0
         self.direction = 1
         self.hands: dict[str, list[dict[str, str]]] = {}
@@ -53,9 +54,11 @@ class UnoEngine(BaseGame):
         joined = super().add_player(user_id, username)
         if joined and user_id not in self.hands:
             self.hands[user_id] = []
-        if self.started and not self.discard:
-            self._start_game()
         return joined
+
+    def on_game_started(self) -> None:
+        if not self.discard:
+            self._start_game()
 
     def _start_game(self) -> None:
         self.draw_pile = make_uno_deck()

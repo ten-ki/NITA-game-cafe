@@ -29,6 +29,7 @@ class DaifugoEngine(BaseGame):
 
     def __init__(self) -> None:
         super().__init__()
+        self.auto_start = False
         self.turn_index = 0
         self.hands: dict[str, list[dict[str, str]]] = {}
         self.active_play: dict[str, Any] | None = None
@@ -39,7 +40,10 @@ class DaifugoEngine(BaseGame):
         joined = super().add_player(user_id, username)
         if joined and user_id not in self.hands:
             self.hands[user_id] = []
-        if self.started and not any(self.hands.values()):
+        return joined
+
+    def on_game_started(self) -> None:
+        if not any(self.hands.values()):
             deck = make_deck()
             for index, card in enumerate(deck):
                 target = self.players[index % len(self.players)]["user_id"]
@@ -47,7 +51,6 @@ class DaifugoEngine(BaseGame):
             for user_cards in self.hands.values():
                 user_cards.sort(key=lambda card: (RANK_ORDER[card["rank"]], card["suit"]))
             self.status_message = "大富豪スタート。"
-        return joined
 
     def _turn_user_id(self) -> str:
         return self.players[self.turn_index]["user_id"]

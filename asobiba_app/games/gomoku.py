@@ -37,6 +37,9 @@ class GomokuEngine(BaseGame):
 
     def snapshot_for(self, user_id: str) -> dict[str, Any]:
         piece = self._piece_for(user_id) if self.is_player(user_id) else None
+        turn_user_id = None
+        if self.started and len(self.players) >= 2:
+            turn_user_id = self.players[0]["user_id"] if self.turn_piece == "B" else self.players[1]["user_id"]
         data = self.snapshot_base(user_id)
         data.update(
             {
@@ -46,6 +49,7 @@ class GomokuEngine(BaseGame):
                 "cols": 15,
                 "piece": piece,
                 "turn_piece": self.turn_piece,
+                "turn_user_id": turn_user_id,
                 "valid_moves": [
                     {"row": r, "col": c}
                     for r in range(15)

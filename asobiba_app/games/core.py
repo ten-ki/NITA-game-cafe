@@ -14,6 +14,7 @@ class BaseGame:
         self.started = False
         self.winner: str | None = None
         self.status_message = "プレイヤーを待っています。"
+        self.auto_start = True
 
     def add_player(self, user_id: str, username: str) -> bool:
         if self.is_player(user_id):
@@ -21,12 +22,22 @@ class BaseGame:
         if self.started or len(self.players) >= self.max_players:
             return False
         self.players.append({"user_id": user_id, "username": username})
-        if len(self.players) >= self.min_players:
-            self.started = True
-            self.status_message = "対戦スタート。"
+        if len(self.players) >= self.min_players and self.auto_start:
+            self.start_game()
         else:
             self.status_message = "もう1人の参加を待っています。"
         return True
+
+    def start_game(self) -> bool:
+        if self.started or len(self.players) < self.min_players:
+            return False
+        self.started = True
+        self.status_message = "対戦スタート。"
+        self.on_game_started()
+        return True
+
+    def on_game_started(self) -> None:
+        return
 
     def is_player(self, user_id: str) -> bool:
         return any(player["user_id"] == user_id for player in self.players)

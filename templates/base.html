@@ -17,13 +17,17 @@
       <div class="brand-mark">☕</div>
       <div>
         <div class="brand-title">Asobiba Game Cafe</div>
-        <div class="brand-sub">木のぬくもりのある対戦ラウンジ</div>
+        <div class="brand-sub">Quick Match Lounge</div>
       </div>
     </div>
     <nav class="site-nav">
       <a class="nav-link" href="/">ホーム</a>
       {% if user %}
+      {% if user.is_guest %}
+      <span class="nav-link">{{ user.username }} (ゲスト)</span>
+      {% else %}
       <a class="nav-link" href="/profile">{{ user.username }}</a>
+      {% endif %}
       <form method="post" action="/logout">
         <button class="ghost-button" type="submit">ログアウト</button>
       </form>

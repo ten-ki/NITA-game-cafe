@@ -3,7 +3,7 @@
 {% block content %}
 <section class="auth-card">
   <h1>新規登録</h1>
-  <p class="muted">メールアドレスなし。ユーザー名と数字 4 桁 PIN だけで始められます。</p>
+  <p class="muted">メール登録なし。ユーザー名と4桁PINだけで開始できます。</p>
   {% if error %}<div class="error-box">{{ error }}</div>{% endif %}
   <form method="post" class="stack-form">
     <label>
@@ -16,6 +16,6 @@
     </label>
     <button class="wood-button" type="submit">アカウントを作る</button>
   </form>
-  <p class="muted small">PIN を忘れた場合は回復せず、新しいアカウントを作り直す前提です。</p>
+  <p class="muted small">PINを忘れた場合は再設定機能がないため、新規アカウント作成での利用になります。</p>
 </section>
 {% endblock %}
