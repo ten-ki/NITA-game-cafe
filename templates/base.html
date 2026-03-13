@@ -7,6 +7,11 @@
   <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
 </head>
 <body>
+  <div class="ambient-layer" aria-hidden="true">
+    <span class="ambient-orb orb-a"></span>
+    <span class="ambient-orb orb-b"></span>
+    <span class="ambient-grid"></span>
+  </div>
   <header class="site-header">
     <div class="site-brand">
       <div class="brand-mark">☕</div>
@@ -16,14 +21,14 @@
       </div>
     </div>
     <nav class="site-nav">
-      <a href="/">ホーム</a>
+      <a class="nav-link" href="/">ホーム</a>
       {% if user %}
-      <a href="/profile">{{ user.username }}</a>
+      <a class="nav-link" href="/profile">{{ user.username }}</a>
       <form method="post" action="/logout">
         <button class="ghost-button" type="submit">ログアウト</button>
       </form>
       {% else %}
-      <a href="/login">ログイン</a>
+      <a class="nav-link" href="/login">ログイン</a>
       <a href="/register" class="primary-link">新規登録</a>
       {% endif %}
     </nav>
