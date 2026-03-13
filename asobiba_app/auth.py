@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import hmac
+import json
 import os
 import time
 from typing import Any
@@ -21,13 +22,21 @@ def _sign(payload: str) -> str:
     return hmac.new(SECRET, payload.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
+def _b64_encode(text: str) -> str:
+    return base64.urlsafe_b64encode(text.encode("utf-8")).decode("ascii")
+
+
+def _b64_decode(text: str) -> str:
+    return base64.urlsafe_b64decode(text.encode("ascii")).decode("utf-8")
+
+
 def login_cookie_value(user_id: str) -> str:
     return f"{user_id}.{_sign(user_id)}"
 
 
 def guest_cookie_value(guest_id: str, username: str) -> str:
     safe_name = validate_username(username)
-    payload = f"guest:{guest_id}:{safe_name}"
+    payload = f"guest:{guest_id}:{_b64_encode(safe_name)}"
     return f"{payload}.{_sign(payload)}"
 
 
@@ -62,7 +71,8 @@ def guest_identity(cookie_value: str | None) -> dict[str, Any] | None:
     if not payload.startswith("guest:"):
         return None
     try:
-        _, guest_id, username = payload.split(":", 2)
+        _, guest_id, encoded_name = payload.split(":", 2)
+        username = _b64_decode(encoded_name)
         return {
             "id": f"guest:{guest_id}",
             "username": validate_username(username),
@@ -78,31 +88,41 @@ def room_token(user_id: str, room_code: str) -> str:
 
 
 def room_token_for_user(user: dict[str, Any], room_code: str) -> str:
-    issued_at = str(int(time.time()))
-    user_id = str(user.get("id", ""))
-    username = str(user.get("username", ""))
-    guest_flag = "1" if user.get("is_guest") else "0"
-    payload = f"{user_id}:{username}:{guest_flag}:{room_code}:{issued_at}"
-    return base64.urlsafe_b64encode(f"{payload}:{_sign(payload)}".encode("utf-8")).decode("utf-8")
+    payload = {
+        "user_id": str(user.get("id", "")),
+        "username": str(user.get("username", "")),
+        "is_guest": bool(user.get("is_guest")),
+        "room_code": room_code,
+        "issued_at": int(time.time()),
+    }
+    packed = _b64_encode(json.dumps(payload, separators=(",", ":"), ensure_ascii=False))
+    signed = f"{packed}:{_sign(packed)}"
+    return _b64_encode(signed)
 
 
 def validate_room_token(token: str, room_code: str) -> dict[str, Any] | None:
     try:
-        decoded = base64.urlsafe_b64decode(token.encode("utf-8")).decode("utf-8")
-        user_id, username, guest_flag, encoded_room, issued_at, signature = decoded.split(":", 5)
+        decoded = _b64_decode(token)
+        packed, signature = decoded.rsplit(":", 1)
     except Exception:
         return None
-    payload = f"{user_id}:{username}:{guest_flag}:{encoded_room}:{issued_at}"
-    if encoded_room != room_code or not hmac.compare_digest(signature, _sign(payload)):
-        return None
-    if int(time.time()) - int(issued_at) > ROOM_TOKEN_TTL:
+    if not hmac.compare_digest(signature, _sign(packed)):
         return None
     try:
-        safe_name = validate_username(username)
+        payload = json.loads(_b64_decode(packed))
+    except Exception:
+        return None
+    if str(payload.get("room_code")) != room_code:
+        return None
+    issued_at = int(payload.get("issued_at", 0))
+    if int(time.time()) - issued_at > ROOM_TOKEN_TTL:
+        return None
+    try:
+        safe_name = validate_username(str(payload.get("username", "")))
     except AuthError:
         return None
     return {
-        "id": user_id,
+        "id": str(payload.get("user_id", "")),
         "username": safe_name,
-        "is_guest": guest_flag == "1",
+        "is_guest": bool(payload.get("is_guest", False)),
     }
